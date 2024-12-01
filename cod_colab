@@ -1,0 +1,222 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+
+# Cargar el conjunto de datos
+data = pd.read_csv('/content/data25k.csv')
+
+# Limpiar la columna 'Price' (remover comas y convertir a numérico)
+data['Price'] = data['Price'].str.replace(',', '').astype(float)
+
+# Limpiar la columna 'Mileage' (remover ' km' y convertir a numérico)
+data['Mileage'] = data['Mileage'].str.replace(' km', '', regex=True).astype(float)
+
+# Convertir 'Leather interior' a valores binarios (Yes = 1, No = 0)
+data['Leather interior'] = data['Leather interior'].map({'Yes': 1, 'No': 0})
+
+# Limpiar la columna 'Engine volume' (extraer solo valores numéricos antes de texto adicional)
+data['Engine volume'] = data['Engine volume'].str.extract(r'(\d+\.?\d*)').astype(float)
+
+# Tratar valores faltantes o inconsistentes en las columnas relevantes
+# Reemplazar valores faltantes ('-') con NaN para una mejor gestión
+data.replace('-', pd.NA, inplace=True)
+
+# Eliminar filas con valores faltantes en columnas críticas
+data.dropna(subset=['Price', 'Mileage', 'Cylinders', 'Engine volume'], inplace=True)
+
+# Seleccionar las características y la variable objetivo
+X = data[['Manufacturer', 'Prod. year', 'Category', 'Leather interior', 
+          'Fuel type', 'Engine volume', 'Mileage', 'Cylinders']]
+y = data['Price']
+
+# Codificar variables categóricas con OneHotEncoder
+categorical_features = ['Manufacturer', 'Category', 'Fuel type']
+one_hot = OneHotEncoder(drop='first', sparse_output=False)
+
+# Crear un transformador para las variables categóricas
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('cat', one_hot, categorical_features)
+    ], remainder='passthrough'  # Mantiene las variables numéricas
+)
+
+# Transformar las características
+X_transformed = preprocessor.fit_transform(X)
+
+# Dividir los datos en conjuntos de entrenamiento y prueba
+X_train, X_test, y_train, y_test = train_test_split(X_transformed, y, test_size=0.2, random_state=42)
+
+# Ajustar el modelo de regresión lineal
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Hacer predicciones
+y_pred = model.predict(X_test)
+
+# Evaluar el modelo
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+# Mostrar resultados
+print(f'Mean Squared Error (MSE): {mse:.2f}')
+print(f'R-squared (R2): {r2:.2f}')
+
+
+import numpy as np
+
+# Calcular el MSE y R2 (ya lo tienes)
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+# Calcular el MAPE (Mean Absolute Percentage Error)
+mape = np.mean(np.abs((y_test - y_pred) / y_test)) * 100
+
+# Calcular porcentaje de predicciones acertadas (±10% del valor real)
+tolerance = 0.10
+accurate_predictions = np.sum(np.abs((y_test - y_pred) / y_test) <= tolerance)
+accuracy = np.sum(np.abs((y_test - y_pred) / y_test) <= 0.10) / len(y_test) * 100
+
+
+# Imprimir los resultados
+print(f"Mean Squared Error (MSE): {mse:.2f}")
+print(f"R-squared (R2): {r2:.2f}")
+print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
+print(f"Accuracy (predicciones dentro del ±10%): {accuracy:.2f}%")
+
+from sklearn.ensemble import GradientBoostingRegressor
+
+gb_model = GradientBoostingRegressor(random_state=42)
+gb_model.fit(X_train, y_train)
+
+y_pred_gb = gb_model.predict(X_test)
+
+mse_gb = mean_squared_error(y_test, y_pred_gb)
+r2_gb = r2_score(y_test, y_pred_gb)
+accuracy_gb = np.sum(np.abs((y_test - y_pred_gb) / y_test) <= 0.10) / len(y_test) * 100
+
+print(f"Gradient Boosting MSE: {mse_gb:.2f}")
+print(f"Gradient Boosting R2: {r2_gb:.2f}")
+print(f"Gradient Boosting Accuracy (±10%): {accuracy_gb:.2f}%")
+
+from sklearn.ensemble import RandomForestRegressor
+
+# Entrenar un modelo de Random Forest
+rf_model = RandomForestRegressor(random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Predicciones y evaluación
+y_pred_rf = rf_model.predict(X_test)
+mse_rf = mean_squared_error(y_test, y_pred_rf)
+r2_rf = r2_score(y_test, y_pred_rf)
+accuracy_rf = np.sum(np.abs((y_test - y_pred_rf) / y_test) <= 0.10) / len(y_test) * 100
+
+print(f"Random Forest MSE: {mse_rf:.2f}")
+print(f"Random Forest R2: {r2_rf:.2f}")
+print(f"Random Forest Accuracy (±10%): {accuracy_rf:.2f}%")
+
+#AHORA HAREMOS UNA CODIFIACIÓN BÁSICA DE ASIGNAR VALORES DE 0 A MÁS DE MANERA CORRELATIVA
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
+
+# Cargar el conjunto de datos
+data = pd.read_csv('/content/data25k.csv')
+
+# Limpiar la columna 'Price' (remover comas y convertir a numérico)
+data['Price'] = data['Price'].str.replace(',', '').astype(float)
+
+# Limpiar la columna 'Mileage' (remover ' km' y convertir a numérico)
+data['Mileage'] = data['Mileage'].str.replace(' km', '', regex=True).astype(float)
+
+# Convertir 'Leather interior' a valores binarios (Yes = 1, No = 0)
+data['Leather interior'] = data['Leather interior'].map({'Yes': 1, 'No': 0})
+
+# Limpiar la columna 'Engine volume' (extraer solo valores numéricos antes de texto adicional)
+data['Engine volume'] = data['Engine volume'].str.extract(r'(\d+\.?\d*)').astype(float)
+
+# Tratar valores faltantes o inconsistentes en las columnas relevantes
+# Reemplazar valores faltantes ('-') con NaN para una mejor gestión
+data.replace('-', pd.NA, inplace=True)
+
+# Eliminar filas con valores faltantes en columnas críticas
+data.dropna(subset=['Price', 'Mileage', 'Cylinders', 'Engine volume'], inplace=True)
+
+# Seleccionar las características y la variable objetivo
+X = data[['Manufacturer', 'Prod. year', 'Category', 'Leather interior', 
+          'Fuel type', 'Engine volume', 'Mileage', 'Cylinders']]
+y = data['Price']
+
+# Codificar variables categóricas con números enteros
+# Convertir las variables categóricas en valores numéricos utilizando 'category' y 'cat.codes'
+categorical_features = ['Manufacturer', 'Category', 'Fuel type']
+
+for feature in categorical_features:
+    X.loc[:, feature] = X[feature].astype('category').cat.codes  # Usando .loc[] para evitar el warning
+
+# Dividir los datos en conjuntos de entrenamiento y prueba
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Ajustar el modelo de regresión lineal
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Hacer predicciones
+y_pred = model.predict(X_test)
+
+# Evaluar el modelo
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+# Calcular el MAPE (Mean Absolute Percentage Error)
+mape = np.mean(np.abs((y_test - y_pred) / y_test)) * 100
+
+# Calcular porcentaje de predicciones acertadas (±10% del valor real)
+tolerance = 0.10
+accuracy = np.sum(np.abs((y_test - y_pred) / y_test) <= tolerance) / len(y_test) * 100
+
+# Mostrar resultados
+print(f"Mean Squared Error (MSE): {mse:.2f}")
+print(f"R-squared (R2): {r2:.2f}")
+print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
+print(f"Accuracy (predicciones dentro del ±10%): {accuracy:.2f}%")
+print("****************************************************************")
+
+# Gradient Boosting
+from sklearn.ensemble import GradientBoostingRegressor
+
+gb_model = GradientBoostingRegressor(random_state=42)
+gb_model.fit(X_train, y_train)
+
+y_pred_gb = gb_model.predict(X_test)
+
+mse_gb = mean_squared_error(y_test, y_pred_gb)
+r2_gb = r2_score(y_test, y_pred_gb)
+accuracy_gb = np.sum(np.abs((y_test - y_pred_gb) / y_test) <= 0.10) / len(y_test) * 100
+
+print(f"Gradient Boosting MSE: {mse_gb:.2f}")
+print(f"Gradient Boosting R2: {r2_gb:.2f}")
+print(f"Gradient Boosting Accuracy (±10%): {accuracy_gb:.2f}%")
+print("****************************************************************")
+
+# Random Forest
+from sklearn.ensemble import RandomForestRegressor
+
+# Entrenar un modelo de Random Forest
+rf_model = RandomForestRegressor(random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Predicciones y evaluación
+y_pred_rf = rf_model.predict(X_test)
+mse_rf = mean_squared_error(y_test, y_pred_rf)
+r2_rf = r2_score(y_test, y_pred_rf)
+accuracy_rf = np.sum(np.abs((y_test - y_pred_rf) / y_test) <= 0.10) / len(y_test) * 100
+
+print(f"Random Forest MSE: {mse_rf:.2f}")
+print(f"Random Forest R2: {r2_rf:.2f}")
+print(f"Random Forest Accuracy (±10%): {accuracy_rf:.2f}%")
+
